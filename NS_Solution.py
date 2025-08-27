@@ -5,6 +5,9 @@ Created on Fri Feb 24 10:26:14 2023
 @author: matte
 """
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import numpy as np
 import sympy
 from sympy import init_printing
@@ -15,11 +18,11 @@ import matplotlib.pyplot as plt
 #Plots the 2D velocity field
 from mpl_toolkits import mplot3d
 from matplotlib import cm
-import matplotlib.pyplot as plt
 
-#%%
+plt.close('all')
 
-'NS equations semplifications'
+'12 steps to NS equations'
+#%% -----------------------------'Step 1 - 1D linear convection'-------------------------------------------------------------
 
 'Step 1 - 1D linear convection'
 
@@ -54,17 +57,20 @@ for n in range(0,nt-1):
     for j in range(0,nx-1):
         u[j,n+1]=un[j,n]-c*dt/dx*(un[j,n]-un[j-1,n])
 
-import matplotlib.pyplot as plt
-plt.figure()
-for i in range(0,nt,10):
+plt.figure(1)
+plt_step_size = 10
+for i in range(0,nt,plt_step_size):
       plt.plot(x, u[:,i], 'r')
       plt.xlabel('x')
       plt.ylabel('u')
       plt.ylim([0.8,2.2])
+      plt.pause(0.1)
       plt.show()
-     
+      plt.figure(1,clear = True)
+      # print(int(i/plt_step_size))
+plt.close('all')
 
-#%% ----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 2 - 1D convection'---------------------------------------------------------
 
 'Step 2 - 1D convection'
 
@@ -102,16 +108,21 @@ for n in range(0,nt-1):
         u[j,n+1]=(un[j-1,n]+un[j+1,n])/2-un[j,n]*dt/2/dx*(un[j+1,n]-un[j-1,n])
 '''
 
-plt.figure()
-for i in range(0,nt,10):
+plt.figure(1)
+plt_step_size = 10
+for i in range(0,nt,plt_step_size):
       plt.plot(x, u[:,i], 'r')
       plt.xlabel('x')
       plt.ylabel('u')
       plt.ylim([0.8,2.5])
       plt.xlim([0,5])
+      plt.pause(0.1)
       plt.show()
+      plt.figure(1, clear=True)
+      # print(int(i/plt_step_size))
+plt.close('all')
 
-#%% ----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 3 - 1D diffusion'--------------------------------------------------------
 
 'Step 3 - 1D diffusion'
  
@@ -141,15 +152,20 @@ for n in range(0,nt-1):
         u[j,n+1]=un[j,n]+vis*dt/dx/dx*(un[j+1,n]-2*un[j,n]+un[j-1,n])
 
 import matplotlib.pyplot as plt
-plt.figure()
-for i in range(0,nt,10):
+plt.figure(1)
+plt_step_size = 10
+for i in range(0,nt,plt_step_size):
       plt.plot(x, u[:,i], 'r')
       plt.xlabel('x')
       plt.ylabel('u')
       plt.ylim([0.8,2.2])
+      plt.pause(0.1)
       plt.show()
+      plt.figure(1, clear=True)
+      # print(int(i/plt_step_size))
+plt.close('all')
 
-#%% ----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 4 - 1D Burgers equation'-------------------------------------------------------
 '''
 'Step 4 "- 1D Burgers" equation'
 
@@ -242,17 +258,22 @@ for n in range(0,nt-1):
     for j in range(0,nx-1):
         u[j,n+1]=un[j,n]-un[j,n]*dt/dx*(un[j,n]-un[j-1,n])+vis*dt/dx/dx*(un[j+1,n]-2*un[j,n]+un[j-1,n])
 
-plt.figure()
-for i in range(0,nt,10):
+plt.figure(1)
+plt_step_size = 10
+for i in range(0,nt,plt_step_size):
     plt.plot(x, u[:,i], 'r')
     plt.xlabel('x')
     plt.ylabel('u')
     plt.ylim([-0.5,1.5])
     plt.xlim([0,5])
+    plt.pause(0.1)
     plt.show()
+    plt.figure(1, clear=True)
+    # print(int(i/plt_step_size))
+plt.close('all')
 
 
-#%% ----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 5 - 2D linear convection'--------------------------------------------------
 
 'Step 5 - 2D linear convection'
 
@@ -303,8 +324,9 @@ from mpl_toolkits import mplot3d
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
-for i in range(0,nt,1):
-    fig = plt.figure(figsize =(14, 9))
+plt_step_size = 1
+plt.figure(1,figsize=(14, 9))
+for i in range(0,nt,plt_step_size):
     ax = plt.axes(projection ='3d')
     # Make data.
     X = np.arange(-5, 5, 10/nx)
@@ -313,9 +335,13 @@ for i in range(0,nt,1):
     
     # Plot the surface.
     surf = ax.plot_surface(X, Y, u[:,:,i], cmap=cm.viridis, linewidth=0, antialiased=False)
+    plt.pause(0.1)
     plt.show()
+    plt.figure(1, clear=True, figsize=(14, 9))
+    #print(int(i / plt_step_size))
+plt.close('all')
 
-#%% -----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 6 - 2D convection'-----------------------------------------------
 'Step 6 - 2D convection'
 
 xmax = 2
@@ -373,20 +399,24 @@ from mpl_toolkits import mplot3d
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
-for i in range(0,nt,1):
-    fig = plt.figure(figsize =(14, 9))
-    ax = plt.axes(projection ='3d')
+plt_step_size = 1
+plt.figure(1,figsize=(14, 9))
+for i in range(0,nt,plt_step_size):
     # Make data.
     X = np.arange(-5, 5, 10/nx)
     Y = np.arange(-5, 5, 10/ny)
     X, Y = np.meshgrid(X, Y)
     # Plot the surface.
+    ax = plt.axes(projection='3d')
     surf = ax.plot_surface(X, Y,u[:,:,i], cmap=cm.viridis, linewidth=0, antialiased=False)
+    plt.pause(0.1)
     plt.show()
-    
+    plt.figure(1,clear = True,figsize=(14, 9))
+    print(int(i/plt_step_size))
+plt.close('all')
 
 
-#%% -----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 7 - 2D Diffusion'-----------------------------------------------------------
 'Step 7 - 2D Diffusion'
 
 xmax = 2
@@ -433,8 +463,9 @@ from mpl_toolkits import mplot3d
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
-for i in range(0,nt,1):
-    fig = plt.figure(figsize =(14, 9))
+plt_step_size = 1
+plt.figure(1, figsize =(14, 9))
+for i in range(0,nt,plt_step_size):
     ax = plt.axes(projection ='3d')
     # Make data.
     X = np.arange(-5, 5, 10/nx)
@@ -443,10 +474,15 @@ for i in range(0,nt,1):
     ax.set_zlim([1, 2])   # Cambia questi limiti se il plot esce dalle Z
     # Plot the surface.
     surf = ax.plot_surface(X, Y,u[:,:,i], cmap=cm.viridis, linewidth=0, antialiased=False)
+    plt.pause(0.1)
     plt.show()
-    
-    
-#%% -----------------------------------------------------------------------------------------------
+    plt.figure(1, clear=True, figsize=(14, 9))
+    #print(int(i / plt_step_size))
+plt.close('all')
+
+
+#%% -----------------------------'Step 8 - 2D Burgers Equation'-----------------------------------------------------------
+#%% -----------------------------'Step 9 - Laplace Equation'-----------------------------------------------------
 'Step 9 - Laplace Equation'
     
 xmax = 2
@@ -473,6 +509,7 @@ p[:,-1] = y
 p[0,:] = p[1,:]
 p[-1,:]= p[-2,:]
 
+plt.figure(1,figsize=(14, 9), dpi=100)
 for n in range(0,nt-1):
     pn=p
     for i in range(0,nx-1):
@@ -484,8 +521,7 @@ for n in range(0,nt-1):
     p[:,-1] = y    
     p[0,:]  = p[1,:]
     p[-1,:] = p[-2,:]
-    
-    fig = plt.figure(figsize =(14, 9),dpi=100)
+
     ax = plt.axes(projection ='3d')
     
     # Make data.
@@ -500,7 +536,13 @@ for n in range(0,nt-1):
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
 
-#%% -----------------------------------------------------------------------------------------------
+    plt.figure(1, clear=True, figsize=(14, 9), dpi=100)
+    plt.pause(0.1)
+    plt.show()
+    # print(n)
+plt.close('all')
+
+#%% -----------------------------'Step 10 - Poisson Equation'---------------------------------------------------
 'Step 10 - Poisson Equation'
     
 xmax = 2
@@ -545,7 +587,7 @@ for n in range(0,nt-1):
     ax.set_ylabel('$y$')
     
 
-#%% -----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 11 - Cavity Flow'------------------------------------------------------
 'Step 11 - Cavity Flow'
     
 xmax = 2
@@ -621,7 +663,7 @@ for it in range(0,nt):
     plt.xlabel('X')
     plt.ylabel('Y')
     
-#%% -----------------------------------------------------------------------------------------------
+#%% -----------------------------'Step 12 - Channel Flow'--------------------------------------------------------------
 'Step 12 - Channel Flow'
     
 xmax = 2
