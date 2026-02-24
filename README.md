@@ -1,4 +1,4 @@
-# 12 Steps to Navier-Stokes: CFD Solver 🌊
+# 12 Steps to Navier-Stokes: CFD Solver 
 
 A computational fluid dynamics (CFD) project focused on the numerical solution of the Navier-Stokes equations using Finite Difference Methods (FDM). This repository follows the structured learning path developed by Prof. Lorena A. Barba.
 
