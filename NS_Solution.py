@@ -652,228 +652,256 @@ plt.show()
     
 
 #%% -----------------------------'Step 11 - Cavity Flow'------------------------------------------------------
-'Step 11 - Cavity Flow'
-
-nx = 41
-ny = 41
-nt = 500
-nit = 50
-c = 1
-dx = 2 / (nx - 1)
-dy = 2 / (ny - 1)
-x = np.linspace(0, 2, nx)
-y = np.linspace(0, 2, ny)
-X, Y = np.meshgrid(x, y)
-
-rho = 1
-nu = .1
-dt = .001
-
-u = np.zeros((ny, nx))
-v = np.zeros((ny, nx))
-p = np.zeros((ny, nx))
-b = np.zeros((ny, nx))
+def sBrackets(b, rho, dt, dx, dy, nt, nx, ny, u, v):
+    for n in range(1, nt - 1):
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                b[i, j, n] = (rho * (1 / dt) * (
+                            (u[i + 1, j, n] - u[i - 1, j, n]) / (2 * dx) + (v[i, j + 1, n] - v[i, j + 1, n]) / (2 * dy))
+                              - ((u[i + 1, j, n] - u[i - 1, j + 1, n]) / (2 * dx)) * (
+                                          (u[i + 1, j, n] - u[i - 1, j + 1, n]) / (2 * dx))
+                              - 2 * (u[i, j + 1, n] - u[i, j - 1, n]) / (2 * dy) * (v[i + 1, j, n] - v[i - 1, j, n]) / (
+                                          2 * dx) -
+                              ((v[i, j + 1, n] - v[i, j - 1, n]) / (2 * dy)) * (
+                                          (v[i, j + 1, n] - v[i, j - 1, n]) / (2 * dy)))
+    return b
 
 
-def build_up_b(b, rho, dt, u, v, dx, dy):
-   b[1:-1, 1:-1] = (rho * (1 / dt *
-                           ((u[1:-1, 2:] - u[1:-1, 0:-2]) /
-                            (2 * dx) + (v[2:, 1:-1] - v[0:-2, 1:-1]) / (2 * dy)) -
-                           ((u[1:-1, 2:] - u[1:-1, 0:-2]) / (2 * dx)) ** 2 -
-                           2 * ((u[2:, 1:-1] - u[0:-2, 1:-1]) / (2 * dy) *
-                                (v[1:-1, 2:] - v[1:-1, 0:-2]) / (2 * dx)) -
-                           ((v[2:, 1:-1] - v[0:-2, 1:-1]) / (2 * dy)) ** 2))
+def Pressure(p, b, dx, dy, nx, ny, nt):
+    pn = np.empty_like(p)
+    pn = p.copy()
 
-   return b
+    for n in range(1, nt - 1):
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                p[i, j, n] = (((pn[i + 1, j, n] + pn[i - 1, j, n]) * dy ** 2 + (
+                            pn[i, j + 1, n] + pn[i, j - 1, n]) * dx ** 2) / (2 * (dx ** 2 + dy ** 2))
+                              - (rho * dx ** 2 * dy ** 2) / (2 * (dx ** 2 + dy ** 2))) * b[i, j, n]
 
+        p[0, :, :]  = p[1, :, :]  # dp/dy = 0 @ x = 2
+        p[:, 0, :]  = p[:, 1, :]  # dp/dx = 0 @ x = 0
+        p[-1, :, :] = 0  # p = 0 @ y = 2
+        p[:, -1, :] = p[:, -2, :]  # dp/dx = 0 @ x = 2
 
-def pressure_poisson(p, dx, dy, b):
-   pn = np.empty_like(p)
-   pn = p.copy()
-
-   for q in range(nit):
-       pn = p.copy()
-       p[1:-1, 1:-1] = (((pn[1:-1, 2:] + pn[1:-1, 0:-2]) * dy ** 2 +
-                         (pn[2:, 1:-1] + pn[0:-2, 1:-1]) * dx ** 2) /
-                        (2 * (dx ** 2 + dy ** 2)) -
-                        dx ** 2 * dy ** 2 / (2 * (dx ** 2 + dy ** 2)) *
-                        b[1:-1, 1:-1])
-
-       p[:, -1] = p[:, -2]  # dp/dx = 0 at x = 2
-       p[0, :] = p[1, :]  # dp/dy = 0 at y = 0
-       p[:, 0] = p[:, 1]  # dp/dx = 0 at x = 0
-       p[-1, :] = 0  # p = 0 at y = 2
-
-   return p
+    return p
 
 
-def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
-   un = np.empty_like(u)
-   vn = np.empty_like(v)
-   b = np.zeros((ny, nx))
+def cavity_flow(u, v, p, nt, dt, dx, dy, rho, vis):
+    un = np.empty_like(u)
+    vn = np.empty_like(v)
+    b = np.zeros((ny, nx, nt))
 
-   for n in range(nt):
-       un = u.copy()
-       vn = v.copy()
+    for n in range(0, nt-1):
+        un = u.copy()
+        vn = v.copy()
 
-       b = build_up_b(b, rho, dt, u, v, dx, dy)
-       p = pressure_poisson(p, dx, dy, b)
+        b = sBrackets(b, rho, dt, dx, dy, nt, nx, ny, u, v)
+        p = Pressure(p, b, dx, dy, nx, ny, nt)
 
-       u[1:-1, 1:-1] = (un[1:-1, 1:-1] -
-                        un[1:-1, 1:-1] * dt / dx *
-                        (un[1:-1, 1:-1] - un[1:-1, 0:-2]) -
-                        vn[1:-1, 1:-1] * dt / dy *
-                        (un[1:-1, 1:-1] - un[0:-2, 1:-1]) -
-                        dt / (2 * rho * dx) * (p[1:-1, 2:] - p[1:-1, 0:-2]) +
-                        nu * (dt / dx ** 2 *
-                              (un[1:-1, 2:] - 2 * un[1:-1, 1:-1] + un[1:-1, 0:-2]) +
-                              dt / dy ** 2 *
-                              (un[2:, 1:-1] - 2 * un[1:-1, 1:-1] + un[0:-2, 1:-1])))
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                u[i, j, n + 1] = (un[i, j, n] - un[i, j, n] * dt / dx * (un[i, j, n] - un[i - 1, j, n])
+                                  - vn[i, j, n] * dt / dy * (un[i, j, n] - un[i, j - 1, n])
+                                  - 1 / rho * dt / 2 / dx * (p[i + 1, j, n] - p[i - 1, j, n])
+                                  + vis * dt / dx ** 2 * (un[i + 1, j, n] - 2 * un[i, j, n] + un[i - 1, j, n])
+                                  + vis * dt / dy ** 2 * (un[i, j + 1, n] - 2 * un[i, j, n] + un[i, j - 1, n]))
+                v[i, j, n + 1] = (vn[i, j, n] - un[i, j, n] * dt / dx * (vn[i, j, n] - vn[i - 1, j, n])
+                                  - vn[i, j, n] * dt / dy * (vn[i, j, n] - vn[i, j - 1, n])
+                                  - 1 / rho * dt / 2 / dy * (p[i, j + 1, n] - p[i, j - 1, n])
+                                  + vis * dt / dx ** 2 * (vn[i + 1, j, n] - 2 * vn[i, j, n] + vn[i - 1, j, n])
+                                  + vis * dt / dy ** 2 * (vn[i, j + 1, n] - 2 * vn[i, j, n] + vn[i, j - 1, n]))
 
-       v[1:-1, 1:-1] = (vn[1:-1, 1:-1] -
-                        un[1:-1, 1:-1] * dt / dx *
-                        (vn[1:-1, 1:-1] - vn[1:-1, 0:-2]) -
-                        vn[1:-1, 1:-1] * dt / dy *
-                        (vn[1:-1, 1:-1] - vn[0:-2, 1:-1]) -
-                        dt / (2 * rho * dy) * (p[2:, 1:-1] - p[0:-2, 1:-1]) +
-                        nu * (dt / dx ** 2 *
-                              (vn[1:-1, 2:] - 2 * vn[1:-1, 1:-1] + vn[1:-1, 0:-2]) +
-                              dt / dy ** 2 *
-                              (vn[2:, 1:-1] - 2 * vn[1:-1, 1:-1] + vn[0:-2, 1:-1])))
+        u[0, :, :] = 0;
+        u[-1, :, :] = 1;
+        u[:, 0, :] = 0;
+        u[:, -1, :] = 0
+        v[0, :, :] = 0;
+        v[-1, :, :] = 0;
+        v[:, 0, :] = 0;
+        v[:, -1, :] = 0
 
-       u[0, :] = 0
-       u[:, 0] = 0
-       u[:, -1] = 0
-       u[-1, :] = 1  # set velocity on cavity lid equal to 1
-       v[0, :] = 0
-       v[-1, :] = 0
-       v[:, 0] = 0
-       v[:, -1] = 0
+    return u, v, p
 
-   return u, v, p
 
-u = np.zeros((ny, nx))
-v = np.zeros((ny, nx))
-p = np.zeros((ny, nx))
-b = np.zeros((ny, nx))
-nt = 100
-u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu)
-
-fig = plt.figure(figsize=(11,7), dpi=100)
-# plotting the pressure field as a contour
-plt.contourf(X, Y, p, alpha=0.5, cmap=cm.viridis)
-plt.colorbar()
-# plotting the pressure field outlines
-plt.contour(X, Y, p, cmap=cm.viridis)
-# plotting velocity field
-plt.quiver(X[::2, ::2], Y[::2, ::2], u[::2, ::2], v[::2, ::2])
-plt.xlabel('X')
-plt.ylabel('Y');
-plt.savefig('cavity_flow.png')
-
-#%% -----------------------------'Step 12 - Channel Flow'--------------------------------------------------------------
-'Step 12 - Channel Flow'
-    
 xmax = 2
 ymax = 2
 tmax = 2
-nx = 41               
+nx = 21
+ny = 21
+nt = 101
+nit = 51  # number of iterations
+dt = tmax / (nt - 1)
+dx = xmax / (nx - 1)
+dy = ymax / (ny - 1)
+
+vis = 0.1
+rho = 1
+
+u = np.zeros((ny, nx, nt))
+v = np.zeros((ny, nx, nt))
+p = np.zeros((ny, nx, nt))
+b = np.zeros((ny, nx, nt))
+
+x = np.linspace(0, xmax, nx)
+y = np.linspace(0, ymax, ny)
+X, Y = np.meshgrid(x, y)
+
+u, v, p = cavity_flow(u, v, p, nt, dt, dx, dy, rho, vis)
+
+# Plot the surface.
+plt_step_size = 1
+fig = plt.figure(1, figsize=(11, 7), dpi=100)
+for i in range(0, nt, plt_step_size):
+    plt.contourf(X, Y, p[:, :, i], alpha=0.5, cmap=cm.viridis)
+    plt.colorbar()
+    plt.contour(X, Y, p[:, :, i], cmap=cm.viridis)
+    plt.quiver(X[::2, ::2], Y[::2, ::2], u[::2, ::2, i], v[::2, ::2, i])
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.pause(0.1)
+    plt.show()
+    plt.figure(1, clear=True)
+
+#%% -----------------------------'Step 12 - Channel Flow'--------------------------------------------------------------
+xmax = 2
+ymax = 2
+tmax = 2
+nx = 41
 ny = 41
 nt = 100
-nit=50  # number of iterations          
-dt = tmax/(nt-1)      
-dx = xmax/(nx-1)     
-dy = ymax/(ny-1)  
-   
+nit = 50  # number of iterations
+dt = tmax / (nt - 1)
+dx = xmax / (nx - 1)
+dy = ymax / (ny - 1)
+
 vis = 0.1
-rho=1
-F=1
+rho = 1
+F = 1
 
-u = np.zeros((ny,nx))
-v = np.zeros((ny,nx))
-p = np.zeros((ny,nx))
-b = np.zeros((ny,nx))
+u = np.zeros((ny, nx))
+v = np.zeros((ny, nx))
+p = np.zeros((ny, nx))
+b = np.zeros((ny, nx))
 
-x = np.linspace(0,xmax,nx)
-y = np.linspace(0,ymax,ny)
+x = np.linspace(0, xmax, nx)
+y = np.linspace(0, ymax, ny)
 
 # Make data.
 X, Y = np.meshgrid(x, y)
 
+
 def sBrackets(b, rho, dt, dx, dy, nx, ny, nt, u, v):
-    for n in range(1,nt-1)
-        for i in range(1,nx-1):
-            for j in range(1,ny-1):
-                b[i,j,n]=rho * (1 / dt) * ((u[i,j+1] - u[i,j-1]) / (2 * dx) + (v[i+1,j] - v[i-1,j]) / (2*dy))-((u[i,j+1]-u[i,j-1])/(2*dx))**2-2*(u[i+1,j]-u[i-1,j])/(2*dy)*(v[i,j+1]-v[i,j-1])/(2*dx)-((v[i+1,j]-v[i-1,j])/(2*dy))**2
+    for n in range(1, nt - 1)
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                b[i, j, n] = rho * (1 / dt) * (
+                            (u[i, j + 1] - u[i, j - 1]) / (2 * dx) + (v[i + 1, j] - v[i - 1, j]) / (2 * dy)) - (
+                                         (u[i, j + 1] - u[i, j - 1]) / (2 * dx)) ** 2 - 2 * (
+                                         u[i + 1, j] - u[i - 1, j]) / (2 * dy) * (v[i, j + 1] - v[i, j - 1]) / (
+                                         2 * dx) - ((v[i + 1, j] - v[i - 1, j]) / (2 * dy)) ** 2
 
                 # Periodic BC Pressure @ x = 2
 
-                b[i,-1]=rho*(1/dt)*((u[i,0]-u[i,-2])/(2*dx)+(v[i+1,-1]-v[i-1,-1])/(2*dy))-((u[i,0]-u[i,-2])/(2*dx))**2-2*(u[i+1,-1]-u[i-1,-1])/(2*dy)*(v[i,0]-v[i,-2])/(2*dx)-((v[i+1,-1]-v[i-1,-1])/(2*dy))**2
+                b[i, -1] = rho * (1 / dt) * (
+                            (u[i, 0] - u[i, -2]) / (2 * dx) + (v[i + 1, -1] - v[i - 1, -1]) / (2 * dy)) - (
+                                       (u[i, 0] - u[i, -2]) / (2 * dx)) ** 2 - 2 * (u[i + 1, -1] - u[i - 1, -1]) / (
+                                       2 * dy) * (v[i, 0] - v[i, -2]) / (2 * dx) - (
+                                       (v[i + 1, -1] - v[i - 1, -1]) / (2 * dy)) ** 2
 
                 # Periodic BC Pressure @ x = 0
 
-                b[i,0]=rho*(1/dt)*((u[i,1]-u[i,-1])/(2*dx)+(v[i+1,0]-v[i-1,0])/(2*dy))-((u[i,1]-u[i,-1])/(2*dx))**2-2*(u[i+1,0]-u[i-1,0])/(2*dy)*(v[i,1]-v[i,-1])/(2*dx)-((v[i+1,0]-v[i-1,0])/(2*dy))**2
+                b[i, 0] = rho * (1 / dt) * (
+                            (u[i, 1] - u[i, -1]) / (2 * dx) + (v[i + 1, 0] - v[i - 1, 0]) / (2 * dy)) - (
+                                      (u[i, 1] - u[i, -1]) / (2 * dx)) ** 2 - 2 * (u[i + 1, 0] - u[i - 1, 0]) / (
+                                      2 * dy) * (v[i, 1] - v[i, -1]) / (2 * dx) - (
+                                      (v[i + 1, 0] - v[i - 1, 0]) / (2 * dy)) ** 2
 
     return b
 
-def Pressure(p,b,dx,dy,nx,ny,nit):
-    
-    for iit in range(0,nit):
-        pn=p.copy()
-        for i in range(1,nx-1):
-            for j in range(1,ny-1):
-                p[i,j]=((pn[i,j+1]+pn[i,j-1])*dy**2+(pn[i+1,j]+pn[i-1,j])*dx**2-b[i,j]*dx**2*dy**2)/(dx**2+dy**2)/2
-                
+
+def Pressure(p, b, dx, dy, nx, ny, nit):
+    for iit in range(0, nit):
+        pn = p.copy()
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                p[i, j] = ((pn[i, j + 1] + pn[i, j - 1]) * dy ** 2 + (pn[i + 1, j] + pn[i - 1, j]) * dx ** 2 - b[
+                    i, j] * dx ** 2 * dy ** 2) / (dx ** 2 + dy ** 2) / 2
+
                 # Periodic BC Pressure @ x = 2
-                
-                p[i,-1]=((pn[i,0]+pn[i,-2])*dy**2+(pn[i+1,-1]+pn[i-1,-1])*dx**2-b[i,-1]*dx**2*dy**2)/(dx**2+dy**2)/2
-                
+
+                p[i, -1] = ((pn[i, 0] + pn[i, -2]) * dy ** 2 + (pn[i + 1, -1] + pn[i - 1, -1]) * dx ** 2 - b[
+                    i, -1] * dx ** 2 * dy ** 2) / (dx ** 2 + dy ** 2) / 2
+
                 # Periodic BC Pressure @ x = 0
-                
-                p[i,0]=((pn[i,1]+pn[i,-1])*dy**2+(pn[i+1,0]+pn[i-1,0])*dx**2-b[i,0]*dx**2*dy**2)/(dx**2+dy**2)/2
-                
-        p[0,:]=p[1,:]; # dp/dy = 0 @ y = 0
-        p[-1,:]=p[-2,:];   # dp/dy = 0 @ y = 2
-        
+
+                p[i, 0] = ((pn[i, 1] + pn[i, -1]) * dy ** 2 + (pn[i + 1, 0] + pn[i - 1, 0]) * dx ** 2 - b[
+                    i, 0] * dx ** 2 * dy ** 2) / (dx ** 2 + dy ** 2) / 2
+
+        p[0, :] = p[1, :];  # dp/dy = 0 @ y = 0
+        p[-1, :] = p[-2, :];  # dp/dy = 0 @ y = 2
+
         return p
 
-for it in range(0,nt):
-    
-    b=sBrackets(b,rho,dt,dx,dy,nx,ny,u,v)
-    
-    p=Pressure(p,b,dx,dy,nx,ny,nit)
-    
-    un=u.copy()
-    vn=v.copy()
-    for i in range(1,nx-1):
-        for j in range(1,ny-1):
-            
-            u[i,j] = un[i,j]-un[i,j]*dt/dx*(un[i,j]-un[i,j-1])-vn[i,j]*dt/dy*(un[i,j]-un[i-1,j])-1/rho*(p[i,j+1]-p[i,j-1])*dt/2/dx+vis*dt/dx**2*(un[i,j-1]-2*un[i,j]+un[i,j+1])+vis*dt/dy**2*(un[i-1,j]-2*un[i,j]+un[i+1,j])+F*dt
-            v[i,j] = vn[i,j]-un[i,j]*dt/dx*(vn[i,j]-vn[i,j-1])-vn[i,j]*dt/dy*(vn[i,j]-vn[i-1,j])-1/rho*(p[i+1,j]-p[i-1,j])*dt/2/dy+vis*dt/dx**2*(vn[i,j-1]-2*vn[i,j]+vn[i,j+1])+vis*dt/dy**2*(vn[i-1,j]-2*vn[i,j]+vn[i+1,j])
-            
-            # Periodic BC u @ x = 2  
-            
-            u[i,-1] = un[i,-1]-un[i,-1]*dt/dx*(un[i,-1]-un[i,-2])-vn[i,-1]*dt/dy*(un[i,-1]-un[i-1,-1])-1/rho*(p[i,0]-p[i,-2])*dt/2/dx+vis*dt/dx**2*(un[i,-2]-2*un[i,-1]+un[i,0])+vis*dt/dy**2*(un[i-1,-1]-2*un[i,-1]+un[i+1,-1])+F*dt
-            
-            # Periodic BC u @ x = 0  
-            
-            u[i,0] = un[i,0]-un[i,0]*d8t/dx*(un[i,0]-un[i,-1])-vn[i,0]*dt/dy*(un[i,0]-un[i-1,0])-1/rho*(p[i,1]-p[i,-1])*dt/2/dx+vis*dt/dx**2*(un[i,-1]-2*un[i,0]+un[i,1])+vis*dt/dy**2*(un[i-1,0]-2*un[i,0]+un[i+1,0])+F*dt
-            
-            # Periodic BC u @ x = 2  
-            
-            v[i,-1] = vn[i,-1]-un[i,-1]*dt/dx*(vn[i,-1]-vn[i,-2])-vn[i,-1]*dt/dy*(vn[i,-1]-vn[i-1,-1])-1/rho*(p[i+1,-1]-p[i-1,-1])*dt/2/dy+vis*dt/dx**2*(vn[i,-2]-2*vn[i,-1]+vn[i,0])+vis*dt/dy**2*(vn[i-1,-1]-2*vn[i,-1]+vn[i+1,-1])
-            
-            # Periodic BC u @ x = 0  
-            
-            v[i,0] = vn[i,0]-un[i,0]*dt/dx*(vn[i,0]-vn[i,-1])-vn[i,0]*dt/dy*(vn[i,0]-vn[i-1,0])-1/rho*(p[i+1,0]-p[i-1,0])*dt/2/dy+vis*dt/dx**2*(vn[i,-1]-2*vn[i,0]+vn[i,1])+vis*dt/dy**2*(vn[i-1,0]-2*vn[i,0]+vn[i+1,0])
-            
-    u[0,:]=0; u[-1,:]=0;
-    v[0,:]=0; v[-1,:]=0;
-     
+
+for it in range(0, nt):
+
+    b = sBrackets(b, rho, dt, dx, dy, nx, ny, u, v)
+
+    p = Pressure(p, b, dx, dy, nx, ny, nit)
+
+    un = u.copy()
+    vn = v.copy()
+    for i in range(1, nx - 1):
+        for j in range(1, ny - 1):
+            u[i, j] = un[i, j] - un[i, j] * dt / dx * (un[i, j] - un[i, j - 1]) - vn[i, j] * dt / dy * (
+                        un[i, j] - un[i - 1, j]) - 1 / rho * (
+                                  p[i, j + 1] - p[i, j - 1]) * dt / 2 / dx + vis * dt / dx ** 2 * (
+                                  un[i, j - 1] - 2 * un[i, j] + un[i, j + 1]) + vis * dt / dy ** 2 * (
+                                  un[i - 1, j] - 2 * un[i, j] + un[i + 1, j]) + F * dt
+            v[i, j] = vn[i, j] - un[i, j] * dt / dx * (vn[i, j] - vn[i, j - 1]) - vn[i, j] * dt / dy * (
+                        vn[i, j] - vn[i - 1, j]) - 1 / rho * (
+                                  p[i + 1, j] - p[i - 1, j]) * dt / 2 / dy + vis * dt / dx ** 2 * (
+                                  vn[i, j - 1] - 2 * vn[i, j] + vn[i, j + 1]) + vis * dt / dy ** 2 * (
+                                  vn[i - 1, j] - 2 * vn[i, j] + vn[i + 1, j])
+
+            # Periodic BC u @ x = 2
+
+            u[i, -1] = un[i, -1] - un[i, -1] * dt / dx * (un[i, -1] - un[i, -2]) - vn[i, -1] * dt / dy * (
+                        un[i, -1] - un[i - 1, -1]) - 1 / rho * (
+                                   p[i, 0] - p[i, -2]) * dt / 2 / dx + vis * dt / dx ** 2 * (
+                                   un[i, -2] - 2 * un[i, -1] + un[i, 0]) + vis * dt / dy ** 2 * (
+                                   un[i - 1, -1] - 2 * un[i, -1] + un[i + 1, -1]) + F * dt
+
+            # Periodic BC u @ x = 0
+
+            u[i, 0] = un[i, 0] - un[i, 0] * d8t / dx * (un[i, 0] - un[i, -1]) - vn[i, 0] * dt / dy * (
+                        un[i, 0] - un[i - 1, 0]) - 1 / rho * (p[i, 1] - p[i, -1]) * dt / 2 / dx + vis * dt / dx ** 2 * (
+                                  un[i, -1] - 2 * un[i, 0] + un[i, 1]) + vis * dt / dy ** 2 * (
+                                  un[i - 1, 0] - 2 * un[i, 0] + un[i + 1, 0]) + F * dt
+
+            # Periodic BC u @ x = 2
+
+            v[i, -1] = vn[i, -1] - un[i, -1] * dt / dx * (vn[i, -1] - vn[i, -2]) - vn[i, -1] * dt / dy * (
+                        vn[i, -1] - vn[i - 1, -1]) - 1 / rho * (
+                                   p[i + 1, -1] - p[i - 1, -1]) * dt / 2 / dy + vis * dt / dx ** 2 * (
+                                   vn[i, -2] - 2 * vn[i, -1] + vn[i, 0]) + vis * dt / dy ** 2 * (
+                                   vn[i - 1, -1] - 2 * vn[i, -1] + vn[i + 1, -1])
+
+            # Periodic BC u @ x = 0
+
+            v[i, 0] = vn[i, 0] - un[i, 0] * dt / dx * (vn[i, 0] - vn[i, -1]) - vn[i, 0] * dt / dy * (
+                        vn[i, 0] - vn[i - 1, 0]) - 1 / rho * (
+                                  p[i + 1, 0] - p[i - 1, 0]) * dt / 2 / dy + vis * dt / dx ** 2 * (
+                                  vn[i, -1] - 2 * vn[i, 0] + vn[i, 1]) + vis * dt / dy ** 2 * (
+                                  vn[i - 1, 0] - 2 * vn[i, 0] + vn[i + 1, 0])
+
+    u[0, :] = 0;
+    u[-1, :] = 0;
+    v[0, :] = 0;
+    v[-1, :] = 0;
+
     # Plot the surface.
     fig = plt.figure(figsize=(11, 7), dpi=100)
     plt.quiver(X[::3, ::3], Y[::3, ::3], u[::3, ::3], v[::3, ::3])
     plt.xlabel('X')
     plt.ylabel('Y')
-
-
