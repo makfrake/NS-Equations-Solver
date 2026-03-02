@@ -507,7 +507,7 @@ u    = np.zeros((nx,ny,nt))
 v    = np.zeros((nx,ny,nt))
 x    = np.zeros(nx)
 y    = np.zeros(ny)
-vis  = 0.05                     # Flow viscosity  (if vis = 0 we get back to the step 3)
+vis  = 0.005                    # Flow viscosity  (if vis = 0 we get back to the step 6)
 
 
 for k in range(0,nx):
