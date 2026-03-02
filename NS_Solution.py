@@ -617,14 +617,10 @@ plt.show()
 'Step 10 - Poisson Equation'
 xmax = 2
 ymax = 1
-tmax = 2
-nx   = 21               
+nx   = 21
 ny   = 21
-nt   = 101              
-dt   = tmax/(nt-1)      
-dx   = xmax/(nx-1)     
+dx   = xmax/(nx-1)
 dy   = ymax/(ny-1)     
-vis  = 0.1
 
 p    = np.zeros((ny,nx))
 b    = np.zeros((ny,nx))
@@ -635,26 +631,24 @@ y    = np.linspace(0,ymax,ny)
 b[int((nx-1)/4),int((ny-1)/4)]     = 100
 b[int((nx-1)*3/4),int((ny-1)*3/4)] = -100
 
-for n in range(0,nt-1):
-    un=u
-    for i in range(0,nx-1):
-        for j in range(0,ny-1):     
-            p[i,j]  = ((pn[i+1,j]+pn[i-1,j])*dy**2+
-                       (pn[i,j+1]+pn[i,j-1])*dx**2-b[i,j]*dx**2*dy**2)/((dx**2+dy**2)*2)
-    fig = plt.figure(figsize =(14, 9),dpi=100)
-    ax  = plt.axes(projection ='3d')
-    
-    # Make data.
-    X, Y = np.meshgrid(x, y)
-    ax.set_zlim([0, 1])   # Cambia questi limiti se il plot esce dalle Z
-    
-    # Plot the surface.
-    surf = ax.plot_surface(X, Y,p[:], cmap=cm.viridis, linewidth=0, antialiased=False)
-    ax.set_xlim(0, 2)
-    ax.set_ylim(0, 1)
-    ax.view_init(30, 225)
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
+pn = p
+for i in range(0,nx-1):
+    for j in range(0,ny-1):
+        p[i,j]  = ((pn[i+1,j] + pn[i-1,j]) * dy ** 2 + (pn[i,j+1] + pn[i,j-1]) * dx ** 2 - b[i,j] * dx ** 2 * dy ** 2) / ((dx ** 2 + dy ** 2) * 2)
+
+fig = plt.figure(figsize=(11, 7), dpi=100)
+ax = fig.gca(projection='3d')
+X, Y = np.meshgrid(x, y)
+surf = ax.plot_surface(X, Y, p[:], rstride=1, cstride=1, cmap=cm.viridis,
+                       linewidth=0, antialiased=False)
+ax.set_xlim(0, 2)
+ax.set_ylim(0, 1)
+ax.view_init(30, 225)
+ax.set_xlabel('$x$')
+ax.set_ylabel('$y$')
+plt.show()
+# print(n)
+# plt.close('all')
     
 
 #%% -----------------------------'Step 11 - Cavity Flow'------------------------------------------------------
