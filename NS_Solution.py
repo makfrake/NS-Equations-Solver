@@ -45,13 +45,13 @@ u[nx-1,:] = 1
 u[int(.5/dx):int(1/dx+1)]= 2
 
 '''
-# The same thing can be done, more awkwardly, this way:
 for i in range(0,nx-1):
     if 0.5 <= x[i-1] <= 1:
         u[i,0] = 2
     else:
         u[i,0] = 1
 '''
+
 for n in range(0,nt-1):
     un = u.copy()
     for j in range(0,nx-1):
@@ -422,16 +422,19 @@ plt.close('all')
 xmax = 2
 ymax = 2
 tmax = 2
-nx   = 21               
-ny   = 21
-nt   = 101              
-dt   = tmax/(nt-1)      
-dx   = xmax/(nx-1)     
-dy   = ymax/(ny-1)     
-vis  = 0.1
+nx   = 31
+ny   = 31
+nt   = 101
+dt   = tmax/(nt-1)
+dx   = xmax/(nx-1)
+dy   = ymax/(ny-1)
+c    = 1
 u    = np.zeros((nx,ny,nt))
+v    = np.zeros((nx,ny,nt))
 x    = np.zeros(nx)
 y    = np.zeros(ny)
+vis  = 0.05                     # Flow viscosity  (if vis = 0 we get back to the step 3)
+
 
 for k in range(0,nx):
     x[k] = dx*k
@@ -444,6 +447,11 @@ u[nx-1,:,:] = 0
 u[:,0,:]    = 0
 u[:,ny-1,:] = 0
 
+v[0,:,:]    = 0
+v[nx-1,:,:] = 0
+v[:,0,:]    = 0
+v[:,ny-1,:] = 0
+
 for i in range(0,nx):
     for j in range(0,ny):
         if 0.5 <= x[i] <= 1 and 0.5 <= y[j] <= 1:
@@ -454,10 +462,12 @@ for i in range(0,nx):
 # 2D 
 for n in range(0,nt-1):
     un=u
+    vn=v
     for i in range(0,nx-1):
         for j in range(0,ny-1):      
-            u[i,j,n+1]  = un[i,j,n]+vis*dt/dx/dx*(un[i+1,j,n]-2*un[i,j,n]+un[i-1,j,n])+vis*dt/dy/dy*(un[i,j+1,n]-2*un[i,j,n]+un[i,j-1,n])
-            
+            u[i,j,n+1]  = un[i,j,n] + vis * dt/dx/dx * (un[i-1,j,n] - 2 * un[i,j,n] + un[i+1,j,n]) + vis * dt/dy/dy * (un[i,j-1,n] - 2 * un[i,j,n] + un[i,j+1,n])
+            v[i,j,n+1]  = vn[i,j,n] + vis * dt/dx/dx * (vn[i-1,j,n] - 2 * vn[i,j,n] + vn[i+1,j,n]) + vis * dt/dy/dy * (vn[i,j-1,n] - 2 * vn[i,j,n] + vn[i,j+1,n])
+
 #Plots the 2D velocity field
 from mpl_toolkits import mplot3d
 from matplotlib import cm
@@ -482,6 +492,80 @@ plt.close('all')
 
 
 #%% -----------------------------'Step 8 - 2D Burgers Equation'-----------------------------------------------------------
+
+xmax = 2
+ymax = 2
+tmax = 2
+nx   = 31
+ny   = 31
+nt   = 101
+dt   = tmax/(nt-1)
+dx   = xmax/(nx-1)
+dy   = ymax/(ny-1)
+c    = 1
+u    = np.zeros((nx,ny,nt))
+v    = np.zeros((nx,ny,nt))
+x    = np.zeros(nx)
+y    = np.zeros(ny)
+vis  = 0.05                     # Flow viscosity  (if vis = 0 we get back to the step 3)
+
+
+for k in range(0,nx):
+    x[k] = dx*k
+
+for p in range(0,ny):
+    y[p] = dy*p
+
+u[0,:,:]    = 0
+u[nx-1,:,:] = 0
+u[:,0,:]    = 0
+u[:,ny-1,:] = 0
+
+v[0,:,:]    = 0
+v[nx-1,:,:] = 0
+v[:,0,:]    = 0
+v[:,ny-1,:] = 0
+
+for i in range(0, nx):
+   for j in range(0, ny):
+       if 0.5 <= x[i] <= 1 and 0.5 <= y[j] <= 1:
+           u[i, j] = 2
+           v[i, j] = 2
+       else:
+           u[i, j] = 1
+           v[i, j] = 1
+
+# 2D
+for n in range(0, nt - 1):
+   un = u
+   vn = v
+   for i in range(0, nx - 1):
+       for j in range(0, ny - 1):
+           u[i,j,n + 1] = un[i,j,n] - un[i,j,n] * dt/dx * (un[i,j,n] - un[i-1,j,n]) - vn[i,j,n] * dt/dy * (un[i,j,n] - un[i,j-1,n]) + vis * dt/dx/dx * (un[i-1,j,n] - 2 * un[i,j,n] + un[i+1,j,n]) + vis * dt/dy/dy * (un[i,j-1,n] - 2 * un[i,j,n] + un[i,j+1,n])
+           v[i,j,n + 1] = vn[i,j,n] - un[i,j,n] * dt/dx * (vn[i,j,n] - vn[i-1,j,n]) - vn[i,j,n] * dt/dy * (vn[i,j,n] - vn[i,j-1,n]) + vis * dt/dx/dx * (vn[i-1,j,n] - 2 * vn[i,j,n] + vn[i+1,j,n]) + vis * dt/dy/dy * (vn[i,j-1,n] - 2 * vn[i,j,n] + vn[i,j+1,n])
+
+# Plots the 2D velocity field
+from mpl_toolkits import mplot3d
+from matplotlib import cm
+import matplotlib.pyplot as plt
+
+plt_step_size = 1
+plt.figure(1, figsize=(14, 9))
+for i in range(0, nt, plt_step_size):
+   ax = plt.axes(projection='3d')
+   # Make data.
+   X = np.arange(-5, 5, 10 / nx)
+   Y = np.arange(-5, 5, 10 / ny)
+   X, Y = np.meshgrid(X, Y)
+   ax.set_zlim([1, 2])  # Cambia questi limiti se il plot esce dalle Z
+   # Plot the surface.
+   surf = ax.plot_surface(X, Y, u[:, :, i], cmap=cm.viridis, linewidth=0, antialiased=False)
+   plt.pause(0.1)
+   plt.show()
+   plt.figure(1, clear=True, figsize=(14, 9))
+   # print(int(i / plt_step_size))
+plt.close('all')
+
 #%% -----------------------------'Step 9 - Laplace Equation'-----------------------------------------------------
 'Step 9 - Laplace Equation'
     
