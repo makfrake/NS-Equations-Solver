@@ -566,69 +566,55 @@ for i in range(0, nt, plt_step_size):
    # print(int(i / plt_step_size))
 plt.close('all')
 
-#%% -----------------------------'Step 9 - Laplace Equation'-----------------------------------------------------
+# %% -----------------------------'Step 9 - Laplace Equation'-----------------------------------------------------
 'Step 9 - Laplace Equation'
-    
+
 xmax = 2
 ymax = 1
-tmax = 2
-nx   = 21               
-ny   = 21
-nt   = 101              
-dt   = tmax/(nt-1)      
-dx   = xmax/(nx-1)     
-dy   = ymax/(ny-1)     
-vis  = 0.1
-p    = np.zeros((ny,nx))
-x    = np.linspace(0,xmax,nx)
-y    = np.linspace(0,ymax,ny)
+nx = 21
+ny = 21
+dx = xmax / (nx - 1)
+dy = ymax / (ny - 1)
+p = np.zeros((ny, nx))
+x = np.linspace(0, xmax, nx)
+y = np.linspace(0, ymax, ny)
 
 # Dirichlet omogeneo
 
-p[:,0]  = 0
-p[:,-1] = y
+p[:, 0] = 0
+p[:, -1] = y
 
 # Neumann omogeneo
 
-p[0,:] = p[1,:]
-p[-1,:]= p[-2,:]
+p[0, :] = p[1, :]
+p[-1, :] = p[-2, :]
 
-plt.figure(1,figsize=(14, 9), dpi=100)
-for n in range(0,nt-1):
-    pn=p
-    for i in range(0,nx-1):
-        for j in range(0,ny-1):     
-            p[i,j]  = ((pn[i+1,j]+pn[i-1,j])*dy**2+
-                       (pn[i,j+1]+pn[i,j-1])*dx**2)/((dx**2+dy**2)*2)
+for i in range(0, nx - 1):
+    pn = p
+    for j in range(0, ny - 1):
+        p[i, j] = ((pn[i + 1, j] + pn[i - 1, j]) * dy ** 2 + (pn[i, j + 1] + pn[i, j - 1]) * dx ** 2) / ((dx ** 2 + dy ** 2) * 2)
 
-    p[:,0]  = 0
-    p[:,-1] = y    
-    p[0,:]  = p[1,:]
-    p[-1,:] = p[-2,:]
+p[:, 0] = 0
+p[:, -1] = y
+p[0, :] = p[1, :]
+p[-1, :] = p[-2, :]
 
-    ax = plt.axes(projection ='3d')
-    
-    # Make data.
-    X, Y = np.meshgrid(x, y)
-    ax.set_zlim([0, 1])   # Cambia questi limiti se il plot esce dalle Z
-    
-    # Plot the surface.
-    surf = ax.plot_surface(X, Y,p[:], cmap=cm.viridis, linewidth=0, antialiased=False)
-    ax.set_xlim(0, 2)
-    ax.set_ylim(0, 1)
-    ax.view_init(30, 225)
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
-
-    plt.figure(1, clear=True, figsize=(14, 9), dpi=100)
-    plt.pause(0.1)
-    plt.show()
-    # print(n)
-plt.close('all')
+fig = plt.figure(figsize=(11, 7), dpi=100)
+ax = fig.gca(projection='3d')
+X, Y = np.meshgrid(x, y)
+surf = ax.plot_surface(X, Y, p[:], rstride=1, cstride=1, cmap=cm.viridis,
+                       linewidth=0, antialiased=False)
+ax.set_xlim(0, 2)
+ax.set_ylim(0, 1)
+ax.view_init(30, 225)
+ax.set_xlabel('$x$')
+ax.set_ylabel('$y$')
+plt.show()
+# print(n)
+# plt.close('all')
 
 #%% -----------------------------'Step 10 - Poisson Equation'---------------------------------------------------
 'Step 10 - Poisson Equation'
-    
 xmax = 2
 ymax = 1
 tmax = 2
